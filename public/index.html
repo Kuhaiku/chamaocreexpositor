@@ -2,176 +2,133 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Catálogo de Doces</title>
-    <!-- Configuração para virar App (PWA) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Vitrine Digital</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4a2511">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
-        
-        body { 
-            margin: 0; padding: 0;
-            background-color: #f6efe9;
-            background-size: cover;
-            background-position: center;
-            font-family: 'Playfair Display', serif;
-            color: #4a2511;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            transition: background-image 0.5s ease;
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+        body, html { 
+            margin: 0; padding: 0; width: 100vw; height: 100vh; background-color: #000; /* Fundo preto para propagandas não cortadas */
+            background-size: 100% 100%; background-position: center; background-repeat: no-repeat;
+            overflow: hidden; font-family: 'Playfair Display', serif; display: flex; align-items: center; justify-content: center;
         }
-        
         #startScreen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(74, 37, 17, 0.95); color: white;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-size: 24px; z-index: 1000; cursor: pointer;
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(74, 37, 17, 0.95); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 24px; z-index: 1000; cursor: pointer;
         }
+        .layout-wrapper { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; z-index: 1; background-color: #fff; background-size: 100% 100%; background-position: center; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 6vh 4vw; width: 80%; height: 65%; }
+        .card { display: flex; align-items: center; justify-content: flex-start; gap: 1.5vw; }
+        .card img { width: 18vh; height: 18vh; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #ddd; }
+        .card h3 { font-size: 5vh; margin: 0; color: #4a2511; white-space: nowrap; }
 
-        .header {
-            text-align: center; margin-top: 20px; position: relative; width: 100%; max-width: 900px;
-        }
-        
-        #siteLogo {
-            max-height: 120px;
-            margin-bottom: 10px;
-            display: none;
-        }
-
-        .header h1 {
-            font-family: 'Pacifico', cursive; font-size: 4.5rem; color: #5c2c16; margin: 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .price-tag {
-            position: absolute; right: 0; top: 20px; font-size: 2rem;
-            border: 2px solid #5c2c16; border-radius: 30px; padding: 10px 25px;
-            background: transparent;
-        }
-
-        .grid { 
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 50px; 
-            margin-top: 30px; padding: 0 40px; width: 100%; box-sizing: border-box; max-width: 1000px;
-        }
-
-        .card { display: flex; align-items: center; gap: 15px; }
-        .card img {
-            width: 90px; height: 90px; object-fit: cover; border-radius: 50%; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 2px solid #5c2c16;
-        }
-        .card h3 { font-size: 1.6rem; margin: 0; color: #5c2c16; }
-
-        video, canvas { display: none; }
+        /* PROPAGANDAS: CONTAIN garante que nada é cortado */
+        #promoContainer { display: none; position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 50; background: #000; cursor: pointer; }
+        #promoImg, #promoVideo { width: 100%; height: 100%; object-fit: contain; display: none; }
+        video#video, canvas#canvas { display: none; }
     </style>
 </head>
-<body>
-    <div id="startScreen" onclick="startApp()">
-        <h2>Toque para Iniciar o Catálogo</h2>
-    </div>
+<body onclick="resetCatalogTimer()">
+    <div id="startScreen" onclick="startApp()"><h2>Toque para Iniciar a Vitrine</h2></div>
     
-    <div class="header">
-        <img id="siteLogo" src="" alt="Logo">
-        <h1 id="mainTitle">Brigadeiros</h1>
-        <div class="price-tag">R$ 8,00</div>
-    </div>
+    <div class="layout-wrapper" id="layoutBg"><div class="grid" id="catalog"></div></div>
     
-    <div class="grid" id="catalog"></div>
-    <video id="video" autoplay playsinline></video>
+    <div id="promoContainer">
+        <img id="promoImg">
+        <video id="promoVideo" muted playsinline></video>
+    </div>
+
+    <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Registra o Service Worker para permitir a instalação do App
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch(err => console.log('Erro no SW:', err));
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(e=>{});
+        const socket = io(); 
+        let isAppStarted = false, wakeLock = null, promoItems = [], promoIndex = 0, isPromoActive = false;
+        let catalogTimer, imageTimer;
+        
+        // Tempos padrão (podem ser substituídos pelo admin)
+        let idleDelay = 60000; 
+        let imgDuration = 10000;
 
-        const socket = io();
-        let isAppStarted = false;
-        let wakeLock = null;
-
-        // Impedir que a tela apague
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock ativado');
-                }
-            } catch (err) {
-                console.error('Erro no Wake Lock:', err);
-            }
-        }
-
-        // Reativar Wake Lock se a aba for minimizada e voltar
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
-            }
-        });
+        async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){} }
+        document.addEventListener('visibilitychange', async () => { if (wakeLock !== null && document.visibilityState === 'visible') await requestWakeLock(); });
 
         function startApp() {
-            document.getElementById('startScreen').style.display = 'none';
-            isAppStarted = true;
-            
-            // Fullscreen via API
-            let elem = document.documentElement;
-            if (elem.requestFullscreen) elem.requestFullscreen();
-            
-            // Travar modo paisagem
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(e => console.log(e));
-            }
-
-            requestWakeLock();
-            startCamera();
+            document.getElementById('startScreen').style.display = 'none'; isAppStarted = true; startMedia();
+            let elem = document.documentElement; if (elem.requestFullscreen) elem.requestFullscreen();
+            if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(e=>{});
+            requestWakeLock(); resetCatalogTimer();
         }
 
-        // Atualizar configurações (Logo e Fundo)
-        socket.on('updateSettings', (settings) => {
-            if (settings.logo) {
-                const logoEl = document.getElementById('siteLogo');
-                logoEl.src = settings.logo;
-                logoEl.style.display = 'inline-block';
-                document.getElementById('mainTitle').style.display = 'none'; // Esconde o texto se tiver logo
-            }
-            if (settings.background) {
-                document.body.style.backgroundImage = `url('${settings.background}')`;
-            }
+        socket.on('updateSettings', (settings) => { 
+            if (settings.background) document.getElementById('layoutBg').style.backgroundImage = `url('${settings.background}')`; 
+            if (settings.promoIdleTime) idleDelay = settings.promoIdleTime * 1000;
+            if (settings.promoImageDuration) imgDuration = settings.promoImageDuration * 1000;
+            resetCatalogTimer(); // Atualiza contagens se mudarem
+        });
+        
+        socket.on('updateCatalog', (items) => { document.getElementById('catalog').innerHTML = items.map(item => `<div class="card"><img src="${item.image}"><h3>${item.name}</h3></div>`).join(''); });
+        socket.on('updatePromo', (items) => { promoItems = items; resetCatalogTimer(); });
+
+        // Comandos Manuais do Admin
+        socket.on('triggerPromoNow', () => { clearTimeout(catalogTimer); startPromo(); });
+        socket.on('stopPromoNow', () => { resetCatalogTimer(); });
+        
+        socket.on('skipPromoNow', () => {
+            if (!isPromoActive) return;
+            clearTimeout(imageTimer);
+            const vidEl = document.getElementById('promoVideo');
+            if(!vidEl.paused) vidEl.pause();
+            promoIndex++;
+            playNextPromo();
         });
 
-        // Atualizar lista
-        socket.on('updateCatalog', (items) => {
-            document.getElementById('catalog').innerHTML = items.map(item => `
-                <div class="card">
-                    <img src="${item.image}" alt="${item.name}">
-                    <h3>${item.name}</h3>
-                </div>
-            `).join('');
-        });
+        function resetCatalogTimer() {
+            if (!isAppStarted) return;
+            isPromoActive = false;
+            clearTimeout(catalogTimer); clearTimeout(imageTimer);
+            document.getElementById('promoContainer').style.display = 'none';
+            document.getElementById('promoVideo').pause();
+            
+            if (promoItems.length > 0) catalogTimer = setTimeout(startPromo, idleDelay); 
+        }
 
-        // Câmera
-        function startCamera() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const context = canvas.getContext('2d');
+        function startPromo() {
+            if (promoItems.length === 0) return;
+            isPromoActive = true;
+            document.getElementById('promoContainer').style.display = 'block';
+            promoIndex = 0;
+            playNextPromo();
+        }
 
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
-                .then(stream => {
-                    video.srcObject = stream;
-                    setInterval(() => {
-                        if(!isAppStarted) return;
-                        canvas.width = video.videoWidth / 2; 
-                        canvas.height = video.videoHeight / 2;
-                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        socket.emit('videoFrame', canvas.toDataURL('image/jpeg', 0.4));
-                    }, 200); 
-                }).catch(e => console.log("Câmera erro:", e));
+        function playNextPromo() {
+            if (!isPromoActive) return;
+            if (promoIndex >= promoItems.length) { resetCatalogTimer(); return; }
+            
+            const item = promoItems[promoIndex], imgEl = document.getElementById('promoImg'), vidEl = document.getElementById('promoVideo');
+            if (item.type === 'video') {
+                imgEl.style.display = 'none'; vidEl.src = item.url; vidEl.style.display = 'block';
+                vidEl.play(); vidEl.onended = () => { promoIndex++; playNextPromo(); };
+            } else {
+                vidEl.pause(); vidEl.style.display = 'none'; imgEl.src = item.url; imgEl.style.display = 'block';
+                imageTimer = setTimeout(() => { promoIndex++; playNextPromo(); }, imgDuration);
+            }
+        }
+
+        function startMedia() {
+            const video = document.getElementById('video'), canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }).then(stream => {
+                video.srcObject = stream;
+                setInterval(() => {
+                    if(!isAppStarted) return;
+                    canvas.width = video.videoWidth / 2; canvas.height = video.videoHeight / 2;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    socket.emit('videoFrame', canvas.toDataURL('image/jpeg', 0.4));
+                }, 200); 
+            }).catch(e => {});
         }
     </script>
 </body>

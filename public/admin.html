@@ -3,130 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin</title>
+    <title>Dashboard | Chama Ocre</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
-        .container { display: flex; gap: 20px; flex-wrap: wrap; }
-        .panel { background: white; padding: 20px; border-radius: 10px; flex: 1; min-width: 300px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        :root {
+            --primary: #a0522d; /* Tom de Ocre/Outono */
+            --primary-hover: #8b4513;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        h1 { text-align: center; font-weight: 800; color: var(--primary); font-size: 2.5rem; margin-bottom: 40px; }
+        h2 { font-size: 1.25rem; font-weight: 600; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 25px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--surface); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
+        
         .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { background: #4CAF50; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .danger { background: #f44336; width: auto; padding: 5px 10px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ddd; }
-        .item-info { display: flex; align-items: center; gap: 10px; }
-        img.preview { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-        #liveStream { width: 100%; background: #000; min-height: 250px; object-fit: contain; }
-        hr { border: 1px solid #eee; margin: 20px 0; }
+        label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+        input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; outline: none; transition: border 0.2s; }
+        input:focus { border-color: var(--primary); }
+        
+        button { background: var(--primary); color: white; border: none; padding: 12px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; width: 100%; }
+        button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        button.action { background: #3b82f6; width: auto; padding: 8px 12px; font-size: 0.8rem; }
+        button.danger { background: var(--danger); width: auto; padding: 8px 12px; font-size: 0.8rem; }
+        button.danger-full { background: var(--danger); }
+        button.warning { background: var(--warning); }
+        button.secondary { background: var(--text-light); width: auto; padding: 8px 12px; font-size: 0.8rem;}
+        
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        
+        .item-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9fafb; border: 1px solid var(--border); border-radius: 10px; }
+        .item-info { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+        img.preview, video.preview { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); }
+        
+        #liveStream { width: 100%; border-radius: 12px; background: #000; aspect-ratio: 16/9; object-fit: contain; }
+        
+        /* Modal */
+        #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--surface); padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
-    <h1>Painel de Controle</h1>
-    <div class="container">
+    <h1>Painel Chama Ocre</h1>
+    
+    <div class="dashboard">
         
-        <div class="panel">
-            <h2>Configurar Visual</h2>
-            <form id="logoForm">
-                <div class="form-group">
-                    <label>Logo (Substitui o texto 'Brigadeiros'):</label>
-                    <input type="file" id="logoFile" accept="image/*" required>
-                </div>
-                <button type="submit">Atualizar Logo</button>
+        <!-- CATÁLOGO -->
+        <div class="card">
+            <h2>🍩 Gestão do Catálogo</h2>
+            <form id="bgForm" style="margin-bottom: 20px;">
+                <div class="form-group"><label>Imagem de Fundo (2400x1080px)</label><input type="file" id="bgFile" accept="image/*" required></div>
+                <button type="submit">Atualizar Fundo da Vitrine</button>
             </form>
-            <br>
-            <form id="bgForm">
-                <div class="form-group">
-                    <label>Imagem de Fundo (A textura da caixinha):</label>
-                    <input type="file" id="bgFile" accept="image/*" required>
-                </div>
-                <button type="submit">Atualizar Fundo</button>
-            </form>
-
-            <hr>
-
-            <h2>Adicionar Doce</h2>
             <form id="addItemForm">
-                <div class="form-group">
-                    <label>Nome do Doce:</label>
-                    <input type="text" id="itemName" required>
-                </div>
-                <div class="form-group">
-                    <label>Foto:</label>
-                    <input type="file" id="itemImage" accept="image/*" required>
-                </div>
-                <button type="submit">Adicionar ao Catálogo</button>
+                <div class="form-group"><label>Nome do Doce</label><input type="text" id="itemName" placeholder="Ex: Brigadeiro Belga" required></div>
+                <div class="form-group"><label>Foto do Doce</label><input type="file" id="itemImage" accept="image/*" required></div>
+                <button type="submit">Adicionar Doce</button>
             </form>
-
-            <div id="adminCatalog" style="margin-top: 20px;"></div>
+            <div id="adminCatalog" class="item-list"></div>
         </div>
 
-        <div class="panel">
-            <h2>Câmera Espiã (Ao Vivo)</h2>
-            <img id="liveStream" alt="Aguardando conexão..." />
+        <!-- PROPAGANDAS -->
+        <div class="card">
+            <h2>📺 Mídia Programática (Descanso)</h2>
+            
+            <!-- Tempos -->
+            <form id="settingsForm" style="background: #fdf6e3; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #fde68a;">
+                <div class="form-group"><label>⏳ Iniciar após X segundos ocioso:</label><input type="number" id="idleTime" min="5" value="60"></div>
+                <div class="form-group"><label>⏱️ Tempo por Foto (segundos):</label><input type="number" id="imgDuration" min="1" value="10"></div>
+                <button type="submit" class="warning" style="color: #000;">Salvar Tempos</button>
+            </form>
+
+            <!-- Controlos Live -->
+            <div class="control-grid">
+                <button class="warning" type="button" onclick="socket.emit('forcePlayPromo')" style="color: #000;">▶️ Forçar Início</button>
+                <button class="danger-full" type="button" onclick="socket.emit('forceStopPromo')">⏹️ Parar</button>
+                <button class="secondary" type="button" onclick="socket.emit('forceSkipPromo')" style="grid-column: span 2; color: #fff;">⏭️ Pular para a Próxima Mídia</button>
+            </div>
+
+            <!-- Upload -->
+            <form id="addPromoForm">
+                <div class="form-group"><label>Enviar Vídeo ou Imagem Comercial:</label><input type="file" id="promoMedia" accept="image/*,video/*" required></div>
+                <button type="submit">Anexar Mídia</button>
+            </form>
+            <div id="adminPromo" class="item-list"></div>
+        </div>
+
+        <!-- CÂMERA -->
+        <div class="card">
+            <h2>👁️ Câmera Frontal (Ao Vivo)</h2>
+            <img id="liveStream" alt="Aguardando a vitrine ser ligada..." />
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="editModal">
+        <div class="modal-content">
+            <h2>✏️ Editar Doce</h2>
+            <form id="editItemForm">
+                <input type="hidden" id="editItemId">
+                <div class="form-group"><label>Nome</label><input type="text" id="editItemName" required></div>
+                <div class="form-group"><label>Nova Foto (Deixe em branco para manter)</label><input type="file" id="editItemImage" accept="image/*"></div>
+                <button type="submit" style="margin-bottom: 10px;">Salvar Alterações</button>
+                <button type="button" class="danger-full" onclick="closeEditModal()">Cancelar</button>
+            </form>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        
-        socket.on('streamVideo', (frame) => {
-            document.getElementById('liveStream').src = frame;
+
+        socket.on('streamVideo', (frame) => document.getElementById('liveStream').src = frame);
+
+        socket.on('updateSettings', (settings) => {
+            if(settings.promoIdleTime) document.getElementById('idleTime').value = settings.promoIdleTime;
+            if(settings.promoImageDuration) document.getElementById('imgDuration').value = settings.promoImageDuration;
         });
 
         socket.on('updateCatalog', (items) => {
             document.getElementById('adminCatalog').innerHTML = items.map(item => `
                 <div class="item-row">
-                    <div class="item-info">
-                        <img src="${item.image}" class="preview">
-                        <span>${item.name}</span>
+                    <div class="item-info"><img src="${item.image}" class="preview"><span>${item.name}</span></div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="action" onclick="openEditModal(${item.id}, '${item.name.replace(/'/g, "\\'")}')">Editar</button>
+                        <button class="danger" onclick="removeItem(${item.id})">Apagar</button>
                     </div>
-                    <button class="danger" onclick="removeItem(${item.id})">Remover</button>
-                </div>
-            `).join('');
+                </div>`).join('');
+        });
+
+        socket.on('updatePromo', (items) => {
+            document.getElementById('adminPromo').innerHTML = items.map(item => `
+                <div class="item-row">
+                    <div class="item-info">
+                        ${item.type === 'video' ? `<video src="${item.url}" class="preview"></video>` : `<img src="${item.url}" class="preview">`}
+                        <span style="font-size: 0.75rem; color: #888; background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">${item.type.toUpperCase()}</span>
+                    </div>
+                    <button class="danger" onclick="removePromo(${item.id})">Apagar</button>
+                </div>`).join('');
         });
 
         async function uploadFile(url, formData, btn) {
-            btn.disabled = true;
-            btn.textContent = 'Enviando...';
-            try {
-                await fetch(url, { method: 'POST', body: formData });
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Atualizar';
-            }
+            const originalText = btn.textContent;
+            btn.disabled = true; btn.textContent = 'Enviando...';
+            try { await fetch(url, { method: 'POST', body: formData }); } 
+            finally { btn.disabled = false; btn.textContent = originalText; }
         }
 
-        document.getElementById('logoForm').onsubmit = (e) => {
+        document.getElementById('bgForm').onsubmit = (e) => { e.preventDefault(); const fd = new FormData(); fd.append('background', document.getElementById('bgFile').files[0]); uploadFile('/api/upload-background', fd, e.target.querySelector('button')); };
+        document.getElementById('addItemForm').onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(); fd.append('name', document.getElementById('itemName').value); fd.append('image', document.getElementById('itemImage').files[0]); await uploadFile('/api/add-item', fd, e.target.querySelector('button')); e.target.reset(); };
+        document.getElementById('addPromoForm').onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(); fd.append('media', document.getElementById('promoMedia').files[0]); await uploadFile('/api/add-promo', fd, e.target.querySelector('button')); e.target.reset(); };
+        
+        document.getElementById('settingsForm').onsubmit = (e) => {
             e.preventDefault();
-            const fd = new FormData();
-            fd.append('logo', document.getElementById('logoFile').files[0]);
-            uploadFile('/api/upload-logo', fd, e.target.querySelector('button'));
-        };
-
-        document.getElementById('bgForm').onsubmit = (e) => {
-            e.preventDefault();
-            const fd = new FormData();
-            fd.append('background', document.getElementById('bgFile').files[0]);
-            uploadFile('/api/upload-background', fd, e.target.querySelector('button'));
-        };
-
-        document.getElementById('addItemForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const fd = new FormData();
-            fd.append('name', document.getElementById('itemName').value);
-            fd.append('image', document.getElementById('itemImage').files[0]);
-            await uploadFile('/api/add-item', fd, e.target.querySelector('button'));
-            e.target.reset();
-        };
-
-        function removeItem(id) {
-            if(confirm('Remover?')) fetch('/api/remove-item', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
+            const btn = e.target.querySelector('button');
+            socket.emit('savePromoSettings', {
+                promoIdleTime: document.getElementById('idleTime').value,
+                promoImageDuration: document.getElementById('imgDuration').value
             });
-        }
+            btn.textContent = "Salvo!"; setTimeout(() => btn.textContent = "Salvar Tempos", 2000);
+        };
+
+        function openEditModal(id, name) { document.getElementById('editItemId').value = id; document.getElementById('editItemName').value = name; document.getElementById('editItemImage').value = ''; document.getElementById('editModal').style.display = 'flex'; }
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+        document.getElementById('editItemForm').onsubmit = async (e) => { e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]'); const fd = new FormData(); fd.append('id', document.getElementById('editItemId').value); fd.append('name', document.getElementById('editItemName').value); const file = document.getElementById('editItemImage').files[0]; if(file) fd.append('image', file); await uploadFile('/api/edit-item', fd, btn); closeEditModal(); };
+
+        function removeItem(id) { if(confirm('Excluir doce?')) fetch('/api/remove-item', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); }
+        function removePromo(id) { if(confirm('Excluir mídia comercial?')) fetch('/api/remove-promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); }
     </script>
 </body>
 </html>
