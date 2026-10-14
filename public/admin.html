@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #a0522d; /* Tom de Ocre/Outono */
+            --primary: #a0522d;
             --primary-hover: #8b4513;
             --bg: #f3f4f6;
             --surface: #ffffff;
@@ -48,7 +48,6 @@
         
         #liveStream { width: 100%; border-radius: 12px; background: #000; aspect-ratio: 16/9; object-fit: contain; }
         
-        /* Modal */
         #editModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-content { background: var(--surface); padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
     </style>
@@ -58,7 +57,6 @@
     
     <div class="dashboard">
         
-        <!-- CATÁLOGO -->
         <div class="card">
             <h2>🍩 Gestão do Catálogo</h2>
             <form id="bgForm" style="margin-bottom: 20px;">
@@ -73,40 +71,35 @@
             <div id="adminCatalog" class="item-list"></div>
         </div>
 
-        <!-- PROPAGANDAS -->
         <div class="card">
             <h2>📺 Mídia Programática (Descanso)</h2>
             
-            <!-- Tempos -->
             <form id="settingsForm" style="background: #fdf6e3; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #fde68a;">
-                <div class="form-group"><label>⏳ Iniciar após X segundos ocioso:</label><input type="number" id="idleTime" min="5" value="60"></div>
-                <div class="form-group"><label>⏱️ Tempo por Foto (segundos):</label><input type="number" id="imgDuration" min="1" value="10"></div>
-                <button type="submit" class="warning" style="color: #000;">Salvar Tempos</button>
+                <div class="form-group"><label>⏳ Iniciar descanso após X segundos ocioso:</label><input type="number" id="idleTime" min="5" value="60"></div>
+                <button type="submit" class="warning" style="color: #000;">Salvar Tempo Ocioso</button>
             </form>
 
-            <!-- Controlos Live -->
             <div class="control-grid">
                 <button class="warning" type="button" onclick="socket.emit('forcePlayPromo')" style="color: #000;">▶️ Forçar Início</button>
                 <button class="danger-full" type="button" onclick="socket.emit('forceStopPromo')">⏹️ Parar</button>
                 <button class="secondary" type="button" onclick="socket.emit('forceSkipPromo')" style="grid-column: span 2; color: #fff;">⏭️ Pular para a Próxima Mídia</button>
             </div>
 
-            <!-- Upload -->
-            <form id="addPromoForm">
-                <div class="form-group"><label>Enviar Vídeo ou Imagem Comercial:</label><input type="file" id="promoMedia" accept="image/*,video/*" required></div>
+            <!-- Formulário atualizado com o campo de tempo de exibição -->
+            <form id="addPromoForm" style="margin-top: 20px; padding-top: 20px; border-top: 2px dashed #e5e7eb;">
+                <div class="form-group"><label>Enviar Vídeo ou Foto:</label><input type="file" id="promoMedia" accept="image/*,video/*" required></div>
+                <div class="form-group"><label>Tempo de tela (Apenas para fotos):</label><input type="number" id="promoDuration" min="1" value="10" placeholder="Ex: 10"></div>
                 <button type="submit">Anexar Mídia</button>
             </form>
             <div id="adminPromo" class="item-list"></div>
         </div>
 
-        <!-- CÂMERA -->
         <div class="card">
             <h2>👁️ Câmera Frontal (Ao Vivo)</h2>
             <img id="liveStream" alt="Aguardando a vitrine ser ligada..." />
         </div>
     </div>
 
-    <!-- MODAL -->
     <div id="editModal">
         <div class="modal-content">
             <h2>✏️ Editar Doce</h2>
@@ -128,7 +121,6 @@
 
         socket.on('updateSettings', (settings) => {
             if(settings.promoIdleTime) document.getElementById('idleTime').value = settings.promoIdleTime;
-            if(settings.promoImageDuration) document.getElementById('imgDuration').value = settings.promoImageDuration;
         });
 
         socket.on('updateCatalog', (items) => {
@@ -142,12 +134,15 @@
                 </div>`).join('');
         });
 
+        // Mostra o tempo configurado na lista ao lado da mídia
         socket.on('updatePromo', (items) => {
             document.getElementById('adminPromo').innerHTML = items.map(item => `
                 <div class="item-row">
                     <div class="item-info">
                         ${item.type === 'video' ? `<video src="${item.url}" class="preview"></video>` : `<img src="${item.url}" class="preview">`}
-                        <span style="font-size: 0.75rem; color: #888; background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">${item.type.toUpperCase()}</span>
+                        <span style="font-size: 0.75rem; color: #888; background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">
+                            ${item.type.toUpperCase()} ${item.type === 'image' ? `(${item.duration}s)` : ''}
+                        </span>
                     </div>
                     <button class="danger" onclick="removePromo(${item.id})">Apagar</button>
                 </div>`).join('');
@@ -162,16 +157,25 @@
 
         document.getElementById('bgForm').onsubmit = (e) => { e.preventDefault(); const fd = new FormData(); fd.append('background', document.getElementById('bgFile').files[0]); uploadFile('/api/upload-background', fd, e.target.querySelector('button')); };
         document.getElementById('addItemForm').onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(); fd.append('name', document.getElementById('itemName').value); fd.append('image', document.getElementById('itemImage').files[0]); await uploadFile('/api/add-item', fd, e.target.querySelector('button')); e.target.reset(); };
-        document.getElementById('addPromoForm').onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(); fd.append('media', document.getElementById('promoMedia').files[0]); await uploadFile('/api/add-promo', fd, e.target.querySelector('button')); e.target.reset(); };
+        
+        // Atualizado: Envia a duração configurada para o servidor
+        document.getElementById('addPromoForm').onsubmit = async (e) => { 
+            e.preventDefault(); 
+            const fd = new FormData(); 
+            fd.append('media', document.getElementById('promoMedia').files[0]); 
+            fd.append('duration', document.getElementById('promoDuration').value); 
+            await uploadFile('/api/add-promo', fd, e.target.querySelector('button')); 
+            e.target.reset(); 
+            document.getElementById('promoDuration').value = 10; // Reseta para o padrão
+        };
         
         document.getElementById('settingsForm').onsubmit = (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             socket.emit('savePromoSettings', {
-                promoIdleTime: document.getElementById('idleTime').value,
-                promoImageDuration: document.getElementById('imgDuration').value
+                promoIdleTime: document.getElementById('idleTime').value
             });
-            btn.textContent = "Salvo!"; setTimeout(() => btn.textContent = "Salvar Tempos", 2000);
+            btn.textContent = "Salvo!"; setTimeout(() => btn.textContent = "Salvar Tempo Ocioso", 2000);
         };
 
         function openEditModal(id, name) { document.getElementById('editItemId').value = id; document.getElementById('editItemName').value = name; document.getElementById('editItemImage').value = ''; document.getElementById('editModal').style.display = 'flex'; }

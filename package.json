@@ -1,14 +1,15 @@
 {
-  "name": "doces",
+  "name": "chama-ocre",
   "version": "1.0.0",
-  "description": "Catálogo de Doces com Câmera Espiã",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.22.3",
+    "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
-    "socket.io": "^4.8.4"
+    "socket.io": "^4.7.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   }
 }
