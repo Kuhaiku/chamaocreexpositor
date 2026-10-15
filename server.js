@@ -61,19 +61,33 @@ app.post('/api/add-item', upload.single('image'), async (req, res) => {
 });
 
 app.post('/api/edit-item', upload.single('image'), async (req, res) => {
+    const idStr = req.body.id.toString();
     if (req.file) {
-        await db.run("UPDATE catalog SET name = ?, image = ? WHERE id = ?", [req.body.name, '/uploads/' + req.file.filename, req.body.id]);
+        await db.run("UPDATE catalog SET name = ?, image = ? WHERE id = ?", [req.body.name, '/uploads/' + req.file.filename, idStr]);
     } else {
-        await db.run("UPDATE catalog SET name = ? WHERE id = ?", [req.body.name, req.body.id]);
+        await db.run("UPDATE catalog SET name = ? WHERE id = ?", [req.body.name, idStr]);
     }
     broadcastAll();
     res.json({ success: true });
 });
 
 app.post('/api/remove-item', async (req, res) => {
-    await db.run("DELETE FROM catalog WHERE id = ?", [req.body.id]);
-    broadcastAll();
-    res.json({ success: true });
+    try {
+        const idStr = req.body.id.toString();
+        // Buscar arquivo para apagar do disco
+        const row = await db.get("SELECT image FROM catalog WHERE id = ?", [idStr]);
+        if (row && row.image) {
+            const filepath = path.join(__dirname, 'public', row.image);
+            if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        }
+        
+        await db.run("DELETE FROM catalog WHERE id = ?", [idStr]);
+        broadcastAll();
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 // --- ROTAS DE CONFIGURAÇÃO E PROMO ---
@@ -93,9 +107,22 @@ app.post('/api/add-promo', upload.single('media'), async (req, res) => {
 });
 
 app.post('/api/remove-promo', async (req, res) => {
-    await db.run("DELETE FROM promo WHERE id = ?", [req.body.id]);
-    broadcastAll();
-    res.json({ success: true });
+    try {
+        const idStr = req.body.id.toString();
+        // Buscar arquivo para apagar do disco
+        const row = await db.get("SELECT url FROM promo WHERE id = ?", [idStr]);
+        if (row && row.url) {
+            const filepath = path.join(__dirname, 'public', row.url);
+            if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        }
+
+        await db.run("DELETE FROM promo WHERE id = ?", [idStr]);
+        broadcastAll();
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 // --- WEBSOCKETS ---
